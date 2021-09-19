@@ -58,9 +58,7 @@ app.delete('/api/persons/:id', (req,res,next) => {
     const id = Number(req.params.id)
     contacts.splice(id)
     Contact.findByIdAndRemove(req.params.id)
-        .then(result => {
-            res.status(204).end()
-        })
+        .then(result => res.status(204).end())
         .catch(error => next(error))
 })
 
@@ -90,10 +88,12 @@ const unknownEndpoint = (req, res) => {
 app.use(unknownEndpoint)
 
 const errorHandler = (error, req, res, next) => {
-    console.log(error)
+    console.log(error.name)
     if(error.name === 'CastError') {
         return res.status(400).send({ error: 'malformatted id' })
-    } else if ( error.name === 'ValidationError') {
+    } else if ( error.name === 'ValidationError' ) {
+        return res.status(400).json({ error: error.message })
+    } else if ( error.name === 'MongoServerError' ) {
         return res.status(400).json({ error: error.message })
     }
     next(error)
