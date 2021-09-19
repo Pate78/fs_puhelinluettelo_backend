@@ -39,25 +39,32 @@ app.get('/info', (req, res) => {
     ${datetime}`).end()
 })
 
-app.get('/api/persons/:id', (req, res) => {
+app.get('/api/persons/:id', (req, res, next) => {
     // res.json(contacts.find(c => c.id === req.body.id))
     const id = Number(req.params.id)
     const contact = contacts.find(c => c.id === id)
-
-    if(contact) {
-        res.json(contact)
-    } else {
-        res.status(404).end()
-    }
+    Contact.findById(req.params.id)
+        .then(c => {
+            if(c) {
+                res.json(c)
+            } else {
+                res.status(404).end()
+            }
+        })
+        .catch(error => next(error))
 })
 
-app.delete('/api/persons/:id', (req,res) => {
+app.delete('/api/persons/:id', (req,res,next) => {
     const id = Number(req.params.id)
     contacts.splice(id)
-    res.status(204).end()
+    Contact.findByIdAndRemove(req.params.id)
+        .then(result => {
+            res.status(204).end()
+        })
+        .catch(error => next(error))
 })
 
-app.post('/api/persons', (req,res) => {
+app.post('/api/persons', (req,res,next) => {
     const newContact = req.body
     const foundContact = contacts.find(c => c.name === newContact.name)
     console.log('Found contact: ',foundContact)
@@ -73,11 +80,29 @@ app.post('/api/persons', (req,res) => {
             contacts.push(newContact)
             res.json(newContact)
         })
+        .catch(error => next(error))
     }
 
 })
+const unknownEndpoint = (req, res) => {
+    res.status(404).send({ error: 'unknown endpoint' })
+}
+app.use(unknownEndpoint)
 
-const PORT = process.env.PORT || 3004
+const errorHandler = (error, req, res, next) => {
+    console.log(error)
+    if(error.name === 'CastError') {
+        return res.status(400).send({ error: 'malformatted id' })
+    } else if ( error.name === 'ValidationError') {
+        return res.status(400).json({ error: error.message })
+    }
+    next(error)
+}
+
+// Tämä kaikkien muiden middleware määrittelyjen jälkeen
+app.use(errorHandler)
+
+const PORT = process.env.PORT
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 })
