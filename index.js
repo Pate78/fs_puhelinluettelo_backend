@@ -1,18 +1,24 @@
+require('dotenv').config()
 const express = require('express')
 const app = express()
 const cors = require('cors')
 const morgan = require('morgan')
+const Contact = require('./models/contact')
 app.use(morgan('tiny'))
 app.use(express.json())
 app.use(cors())
 app.use(express.static('build'))
 
-let contacts = [
-    { name: 'Arto Hellas', number: '040-123456', id: 0 },
-    { name: 'Ada Lovelace', number: '39-44-5323523', id: 1 },
-    { name: 'Dan Abramov', number: '12-43-234345', id: 2},
-    { name: 'Mary Poppendieck', number: '39-23-6423122', id: 3 }
-]
+let contacts = []
+//     { name: 'Arto Hellas', number: '040-123456', id: 0 },
+//     { name: 'Ada Lovelace', number: '39-44-5323523', id: 1 },
+//     { name: 'Dan Abramov', number: '12-43-234345', id: 2},
+//     { name: 'Mary Poppendieck', number: '39-23-6423122', id: 3 }
+// ]
+
+//Mongoose
+
+//
 
 let currentdate = new Date(); 
 let datetime = "Last Sync: " + currentdate.getDate() + "/"
@@ -23,7 +29,9 @@ let datetime = "Last Sync: " + currentdate.getDate() + "/"
                 + currentdate.getSeconds();
 
 app.get('/api/persons', (req, res) => {
-    res.json(contacts)
+    Contact.find({}).then(contacts => {
+        res.json(contacts)
+    })
 })
 
 app.get('/info', (req, res) => {
@@ -53,18 +61,23 @@ app.post('/api/persons', (req,res) => {
     const newContact = req.body
     const foundContact = contacts.find(c => c.name === newContact.name)
     console.log('Found contact: ',foundContact)
-    console.log(newContact)
-    if(newContact.number === undefined || newContact.name === undefined || foundContact !== undefined) {
+    // console.log(newContact)
+    if(newContact === undefined || newContact.number === undefined || newContact.name === undefined || foundContact !== undefined) {
         return res.status(400).json({ error: 'Name must be unique'})
     } else {
-        newContact.id = contacts.length
-        contacts.push(newContact)
-        res.json(newContact)
+        const contact = new Contact({
+            name: newContact.name,
+            number: newContact.number
+        })
+        contact.save().then(savedContact => {
+            contacts.push(newContact)
+            res.json(newContact)
+        })
     }
 
 })
 
-const PORT = process.env.PORT || 3003
+const PORT = process.env.PORT || 3004
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 })
