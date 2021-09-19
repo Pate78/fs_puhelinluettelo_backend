@@ -5,6 +5,7 @@ const morgan = require('morgan')
 app.use(morgan('tiny'))
 app.use(express.json())
 app.use(cors())
+app.use(express.static('build'))
 
 let contacts = [
     { name: 'Arto Hellas', number: '040-123456', id: 0 },
